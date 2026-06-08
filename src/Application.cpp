@@ -2,6 +2,52 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+//Compile the vertex and fragment shaders
+static unsigned int ComileShader(unsigned int type, const std::string& source)
+{
+    unsigned int id = glCreateShader(type);
+    const char* src = source.c_str();
+    glShaderSource(id, 1, &src, nullptr);
+    glCompileShader(id);
+
+    int result;
+
+    glGetShaderiv(id, GL_COMPILE_STATUS, &result);
+
+    //Error handling for compiling the shaders
+    if (result == GL_FALSE) 
+    {
+        int length;
+        glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
+        char* message = (char*)alloca(length * sizeof(char));
+        glGetShaderInfoLog(id, length, &length, message);
+        std::cout << "failed to compile" << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << "Shader!" << std::endl;
+        std::cout << message << std::endl;
+        glDeleteShader(id);
+        return 0;
+    }
+    
+
+
+    return id;
+}
+//Makes the vertex and fragment shaders
+static unsigned int CreateShader(const std::string& vertexShader, const std::string& fragmentShader) 
+{
+    unsigned int program = glCreateProgram();
+    unsigned int vs = ComileShader(GL_VERTEX_SHADER, vertexShader);
+    unsigned int fs = ComileShader(GL_FRAGMENT_SHADER, fragmentShader);
+
+    glAttachShader(program, vs);
+    glAttachShader(program, fs);
+    glLinkProgram(program);
+    glValidateProgram(program);
+    //You can delete the shaders after they have been attacthed to the program to save memory
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+
+    return program;
+}
 
 int main(void)
 {
@@ -28,7 +74,7 @@ int main(void)
 
     std::cout << glGetString(GL_VERSION) << std::endl;
 
-    float positions[] = {
+    float positions[6] = {
         -0.5f, -0.5f,
         0.0f, 0.5f,
         0.5f, -0.5f
@@ -38,6 +84,30 @@ int main(void)
     glGenBuffers(1,&buffer);
     glBindBuffer(GL_ARRAY_BUFFER, buffer);
     glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float),positions,GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 2, 0);
+
+    std::string vertexShader =
+        "#version 330 core\n"
+        "\n"
+        "layout(location = 0) in vec4 position;"
+        "void main()\n"
+        "{\n"
+        "  gl_Position = position;\n"
+        "}\n";
+
+    std::string fragmentShader =
+        "#version 330 core\n"
+        "\n"
+        "layout(location = 0) out vec4 color;"
+        "void main()\n"
+        "{\n"
+        "  color = vec4(1.0, 0.0, 0.0, 1.0);\n"
+        "}\n";
+
+    unsigned int shader = CreateShader(vertexShader,fragmentShader);
+    glUseProgram(shader);
 
     /* Loop until the user closes the window */
     while (!glfwWindowShouldClose(window))
@@ -53,6 +123,7 @@ int main(void)
         /* Poll for and process events */
         glfwPollEvents();
     }
+    glDeleteProgram(shader);
 
     glfwTerminate();
     return 0;
