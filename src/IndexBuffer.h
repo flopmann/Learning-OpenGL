@@ -1,5 +1,6 @@
 #pragma once
 
+
 class IndexBuffer
 {
 private:
@@ -12,5 +13,5 @@ public:
 	void Bind() const;
 	void UnBind() const;
 
-	inline unsigned int getCOunt() const { return m_Count; }
+	inline unsigned int getCount() const { return m_Count; }
 };
